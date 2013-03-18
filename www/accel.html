@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+        <script>
+            $('document').ready(function(){
+ 
+                $(window).bind("devicemotion", function(e){
+                    var movitBaby = e.originalEvent,
+                        acelera = movitBaby.accelerationIncludingGravity,
+                        x = acelera.x,
+                        y = acelera.y,
+                        z = acelera.z;
+ 
+                    $("body").html(
+                        "x = <b>" + x + "</b><br/>" +
+                        "y = <b>" + y + "</b><br/>" +
+                        "z = <b>" + z + "</b>"
+                    );
+                });
+            });
+        </script>
+    </head>
+    <body>
+    </body>
+</html>
