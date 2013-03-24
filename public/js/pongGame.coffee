@@ -53,7 +53,7 @@ class Swing extends Action
     extrapolatedState.ball.speed.x *= -1
     extrapolatedState.ball.speed.y *= -1
     if extrapolatedState.ball.speed.x is 0
-      extrapolatedState.ball.speed.x = 0.001
+      extrapolatedState.ball.speed.x = 0.1
     return extrapolatedState
   
 # representation of a game round - series of player swings
@@ -114,14 +114,14 @@ pongRound = new PongRound new PongState new Date().valueOf(),
 window.onkeypress = (event)-> if event.keyCode is 32
   pongRound.addAction new Swing new Date().valueOf(), null, null, null
 
+
 renderingInterval = setInterval ->
-  x = (pongRound.getStateAtTime new Date().valueOf()).ball.location.x
-  displayString = ""
-  for index in [0...Math.round(x*10)]
-    displayString += " "
-  displayString += "O"
-  console.log displayString
-, 100
+  startTime = new Date().valueOf()
+  {x,y} = (pongRound.getStateAtTime new Date().valueOf()).ball.location
+  document.body.innerHTML = "<div style='width: 10px; height: 10px; background: blue; position: absolute; left: " + x + "px; top: " + y + "px;'></div>"
+  endTime = new Date().valueOf()
+  console.log "rendering took: " + (endTime - startTime) + " milliseconds"
+, 10
 
 window.stop = ->
   clearInterval renderingInterval

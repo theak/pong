@@ -95,7 +95,7 @@ Swing = (function(_super) {
     extrapolatedState.ball.speed.x *= -1;
     extrapolatedState.ball.speed.y *= -1;
     if (extrapolatedState.ball.speed.x === 0) {
-      extrapolatedState.ball.speed.x = 0.001;
+      extrapolatedState.ball.speed.x = 0.1;
     }
     return extrapolatedState;
   };
@@ -159,15 +159,13 @@ window.onkeypress = function(event) {
 };
 
 renderingInterval = setInterval(function() {
-  var displayString, index, x, _i, _ref;
-  x = (pongRound.getStateAtTime(new Date().valueOf())).ball.location.x;
-  displayString = "";
-  for (index = _i = 0, _ref = Math.round(x * 10); 0 <= _ref ? _i < _ref : _i > _ref; index = 0 <= _ref ? ++_i : --_i) {
-    displayString += " ";
-  }
-  displayString += "O";
-  return console.log(displayString);
-}, 100);
+  var endTime, startTime, x, y, _ref;
+  startTime = new Date().valueOf();
+  _ref = (pongRound.getStateAtTime(new Date().valueOf())).ball.location, x = _ref.x, y = _ref.y;
+  document.body.innerHTML = "<div style='width: 10px; height: 10px; background: blue; position: absolute; left: " + x + "px; top: " + y + "px;'></div>";
+  endTime = new Date().valueOf();
+  return console.log("rendering took: " + (endTime - startTime) + " milliseconds");
+}, 10);
 
 window.stop = function() {
   return clearInterval(renderingInterval);
