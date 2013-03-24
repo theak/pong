@@ -15,14 +15,14 @@
 class PongState
   constructor: (@timestamp, @ball)->
 
+class Ball
+  constructor: (@location, @speed)->
+
 class Location
   constructor: (@x, @y)->
 
 class Speed
   constructor: (@x, @y)->
-
-class Ball
-  constructor: (@location, @speed)->
 
 # abstract class representing actions
 # an action has a timestamp which we use to order them by
@@ -49,7 +49,12 @@ class Swing extends Action
   constructor: (timestamp, @playerID, @side, @speed)->
     super timestamp
   actOn: (state)->
-    extrapolatedState = new Extrapolate(@timestamp).actOn state
+    extrapolatedState = new Extrapolate(@timestamp).actOn state 
+    extrapolatedState.ball.speed.x *= -1
+    extrapolatedState.ball.speed.y *= -1
+    if extrapolatedState.ball.speed.x is 0
+      extrapolatedState.ball.speed.x = 0.001
+    return extrapolatedState
   
 # representation of a game round - series of player swings
 class PongRound
@@ -74,7 +79,7 @@ class PongRound
     # find the index of most recent action before or at the requested timestamp
     # -1 indicates there were no actions before or at the requested timestamp
     mostRecentIndex = -1
-    for actionIndex in [(actions.length - 1)...0] by -1
+    for actionIndex in [(actions.length - 1)...-1]
       if actions[actionIndex].timestamp <= timestamp
         mostRecentIndex = actionIndex
         break
@@ -85,13 +90,38 @@ class PongRound
 
     # bring the cache up to speed if necessary
     while mostRecentCachedIndex < mostRecentIndex
-      mostRecentCachedState = cachedStates[mostRecentCachedIndex]
+      mostRecentCachedState = 
+        if mostRecentCachedIndex >= 0 then cachedStates[mostRecentCachedIndex] 
+        else @startState
       nextAction = actions[mostRecentCachedIndex + 1]
       nextState = nextAction.actOn mostRecentCachedState
       cachedStates[mostRecentCachedIndex + 1] = nextState
       mostRecentCachedIndex += 1
 
     # do the final extrapolation to the requested timestamp
-    mostRecentState = cachedStates[mostRecentIndex]
+    mostRecentState = 
+      if mostRecentCachedIndex >= 0 then cachedStates[mostRecentIndex]
+      else @startState
     new Extrapolate(timestamp).actOn mostRecentState
 
+
+
+# test code
+pongRound = new PongRound new PongState new Date().valueOf(),
+                                        new Ball (new Location 0, 0),
+                                                 (new Speed 0, 0)
+
+window.onkeypress = (event)-> if event.keyCode is 32
+  pongRound.addAction new Swing new Date().valueOf(), null, null, null
+
+renderingInterval = setInterval ->
+  x = (pongRound.getStateAtTime new Date().valueOf()).ball.location.x
+  displayString = ""
+  for index in [0...Math.round(x*10)]
+    displayString += " "
+  displayString += "O"
+  console.log displayString
+, 100
+
+window.stop = ->
+  clearInterval renderingInterval
