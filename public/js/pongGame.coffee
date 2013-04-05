@@ -5,24 +5,12 @@
 
 # PongState = 
 #   timestamp: int
-#   ball:
-#     location:
-#       x: number
-#       y: number
-#     speed:
-#       x: number
-#       y: number
+#   ballLocX: number
+#   ballLocY: number
+#   ballSpeedX: number
+#   ballSpeedY: number
 class PongState
-  constructor: (@timestamp, @ball)->
-
-class Ball
-  constructor: (@location, @speed)->
-
-class Location
-  constructor: (@x, @y)->
-
-class Speed
-  constructor: (@x, @y)->
+  constructor: (@timestamp, @ballLocX, @ballLocY, @ballSpeedX, @ballSpeedY)->
 
 # abstract class representing actions
 # an action has a timestamp which we use to order them by
@@ -35,27 +23,65 @@ class Action
 class Extrapolate extends Action
   actOn: (state)->
     timeGap = @timestamp - state.timestamp
-    extrapolatedLocation = new Location state.ball.location.x + 
-                                        (timeGap * state.ball.speed.x),
-                                        state.ball.location.y + 
-                                        (timeGap * state.ball.speed.y)
+    extrapolatedX = state.ballLocX + (timeGap * state.ballSpeedX)
+    extrapolatedY = state.ballLocY + (timeGap * state.ballSpeedY)
+    extrapolatedSpeedX = state.ballSpeedX
+    extrapolatedSpeedY = state.ballSpeedY
+    if extrapolatedX > 1
+      extrapolatedX = 2 - extrapolatedX
+      extrapolatedSpeedX *= -1
+    else if extrapolatedX < 0
+      extrapolatedX *= -1
+      extrapolatedSpeedX *= -1
     new PongState @timestamp,
-                  new Ball extrapolatedLocation,
-                           new Speed state.ball.speed.x,
-                                     state.ball.speed.y
+                  extrapolatedX,
+                  extrapolatedY,
+                  extrapolatedSpeedX,
+                  extrapolatedSpeedY
 
 # takes a state - extrapolates it, then modifies it by a player swing
 class Swing extends Action
-  constructor: (timestamp, @playerID, @side, @speed)->
-    super timestamp
+  constructor: (timestamp, @playerID, @side, @speed)-> super timestamp
   actOn: (state)->
-    extrapolatedState = new Extrapolate(@timestamp).actOn state 
-    extrapolatedState.ball.speed.x *= -1
-    extrapolatedState.ball.speed.y *= -1
-    if extrapolatedState.ball.speed.x is 0
-      extrapolatedState.ball.speed.x = 0.1
-    return extrapolatedState
-  
+
+    MAX_REACH = 0.1
+    MAX_ANGLE = Math.PI/4
+
+    extrapolatedState = new Extrapolate(@timestamp).actOn state
+
+    # assume player 0 and right swing - change if otherwise
+    gap = extrapolatedState.ballLocY
+    if (@playerID is 1) then gap  = 1 - gap
+
+    # ball out of reach - continue unmolested
+    if gap < 0 or gap > MAX_REACH
+      return extrapolatedState
+    
+    # ball is reach calculate reflected angle
+    else
+      contactAngle = MAX_ANGLE * gap/MAX_REACH
+      if (@playerID is 1) then contactAngle  += Math.PI
+      if (@side is "left") then contactAngle  += Math.PI - (2 * contactAngle)
+
+      reflectedBallSpeedX = (extrapolatedState.ballSpeedX * 
+                            Math.cos(2*contactAngle)) + 
+                            (extrapolatedState.ballSpeedY * 
+                            Math.sin(2*contactAngle))
+
+      reflectedBallSpeedY = (extrapolatedState.ballSpeedX * 
+                            Math.sin(2*contactAngle)) +
+                            (extrapolatedState.ballSpeedY * 
+                            -Math.cos(2*contactAngle))
+
+      if reflectedBallSpeedX is 0 and reflectedBallSpeedY is 0
+        reflectedBallSpeedY = 0.0005
+
+      return new PongState extrapolatedState.timestamp,
+                           extrapolatedState.ballLocX,
+                           extrapolatedState.ballLocY,
+                           reflectedBallSpeedX,
+                           reflectedBallSpeedY
+ 
 # representation of a game round - series of player swings
 class PongRound
 
@@ -107,21 +133,40 @@ class PongRound
 
 
 # test code
-pongRound = new PongRound new PongState new Date().valueOf(),
-                                        new Ball (new Location 0, 0),
-                                                 (new Speed 0, 0)
+pongRound = new PongRound new PongState(new Date().valueOf(), 0, 0, 0, 0)
 
-window.onkeypress = (event)-> if event.keyCode is 32
-  pongRound.addAction new Swing new Date().valueOf(), null, null, null
+window.onkeypress = (event)-> 
+  if event.keyCode is 122
+    pongRound.addAction new Swing new Date().valueOf(), 0, "right", null
+  else if event.keyCode = 120
+    pongRound.addAction new Swing new Date().valueOf(), 1, "right", null
 
 
-renderingInterval = setInterval ->
-  startTime = new Date().valueOf()
-  {x,y} = (pongRound.getStateAtTime new Date().valueOf()).ball.location
-  document.body.innerHTML = "<div style='width: 10px; height: 10px; background: blue; position: absolute; left: " + x + "px; top: " + y + "px;'></div>"
-  endTime = new Date().valueOf()
-  console.log "rendering took: " + (endTime - startTime) + " milliseconds"
-, 10
+window.onload = ->
+  COURT_SIZE = 500
+
+  court = document.getElementById "court"
+  court.style.position = "absolute"
+  court.style.top = "0px"
+  court.style.left = "0px"
+  court.style.width = COURT_SIZE + "px"
+  court.style.height = COURT_SIZE + "px"
+  court.style.backgroundColor = "green"
+
+  ball = document.getElementById "ball"
+  ball.style.width = "10px"
+  ball.style.height = "10px"
+  ball.style.backgroundColor = "blue"
+  ball.style.position = "absolute"
+
+  renderingInterval = setInterval ->
+    startTime = new Date().valueOf()
+    currentState = (pongRound.getStateAtTime new Date().valueOf())
+    ball.style.left = COURT_SIZE * currentState.ballLocX + "px"
+    ball.style.bottom = COURT_SIZE * currentState.ballLocY + "px"
+    endTime = new Date().valueOf()
+    console.log currentState.ballLocX + ", " + currentState.ballLocY
+  , 10
 
 window.stop = ->
   clearInterval renderingInterval
