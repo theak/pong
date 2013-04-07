@@ -20,7 +20,7 @@ window.onload = ->
 
   # display the QR code for mobile phones to connect
   qrCode = document.body.e "img mobileCode", ->
-    @src = "http://chart.googleapis.com/chart?cht=qr&chs=128x128&choe=UTF-8&chld=H|0&chl=http://www.google.com"
+    @src = "http://chart.googleapis.com/chart?cht=qr&chs=128x128&choe=UTF-8&chld=H|0&chl=http://http://10.1.10.20:8000/m.index.html"
 
   playerScores = [0, 0]
 
