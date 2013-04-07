@@ -7,11 +7,11 @@
   <script src="js/clientsocket.js"></script>
   <script src="js/gyro.js"></script>
   <script src="js/movement.js"></script>
-  <script>
+  <script defer>
     //todo: Replace this with a callback
     setTimeout(function() {
-      $("#info").html(swinger.playerId ? ("welcome, player " + swinger.playerId) : "too many players!");
-    }, 1000);
+      $("#info").html(typeof swinger.playerId == "number" ? ("welcome, player " + swinger.playerId) : "too many players!");
+    }, 500);
   </script>
 </head>
 <body>

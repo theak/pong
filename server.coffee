@@ -6,6 +6,7 @@ nodeStatic = require "node-static"
 socketIO = require "socket.io"
 
 tokenToPlayerSockets = {}
+socketToToken = {}
 
 # set up the static file server
 fileServer = new nodeStatic.Server DEFAULT_PUBLIC_FOLDER_PATH, {cache: false}
@@ -26,8 +27,17 @@ io.sockets.on 'connection', (socket)->
       socket.emit('message', "too many players")
     else
       tokenToPlayerSockets[token].push(socket.id)
+      socketToToken[socket.id] = token
       socket.emit('playerId', tokenToPlayerSockets[token].length - 1)
       socket.emit('message', "welcome, player " + tokenToPlayerSockets[token].length - 1)
+
+  socket.on 'disconnect', ->
+      token = socketToToken[socket.id]
+      if token
+        for i in [0...tokenToPlayerSockets[token].length]
+          if tokenToPlayerSockets[token][i] == socket.id
+            tokenToPlayerSockets[token].splice(i, 1)
+        delete socketToToken[socket.id]
 
   socket.on 'swing', (swing)->
     io.sockets.in(swing.token).emit('message', swing)
