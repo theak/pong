@@ -1,16 +1,17 @@
+console.log "hi"
 # state represents all information needed to show a game
 # an action takes a state and outputs another state
 # an action can be composited from other actions
 # game is a series of actions
-
-# PongState = 
-#   timestamp: int
-#   ballLocX: number
-#   ballLocY: number
-#   ballSpeedX: number
-#   ballSpeedY: number
 class PongState
-  constructor: (@timestamp, @ballLocX, @ballLocY, @ballSpeedX, @ballSpeedY)->
+  constructor: (@timestamp,
+                @ballLocX, 
+                @ballLocY, 
+                @ballSpeedX, 
+                @ballSpeedY,
+                @courtWidth,
+                @courtLength,
+                @winner)->
 
 # abstract class representing actions
 # an action has a timestamp which we use to order them by
@@ -22,22 +23,37 @@ class Action
 # takes a state - and extrapolates it to the given timestamp
 class Extrapolate extends Action
   actOn: (state)->
+
+    # basic extrapolation of the ball
     timeGap = @timestamp - state.timestamp
     extrapolatedX = state.ballLocX + (timeGap * state.ballSpeedX)
     extrapolatedY = state.ballLocY + (timeGap * state.ballSpeedY)
     extrapolatedSpeedX = state.ballSpeedX
     extrapolatedSpeedY = state.ballSpeedY
-    if extrapolatedX > 1
-      extrapolatedX = 2 - extrapolatedX
-      extrapolatedSpeedX *= -1
-    else if extrapolatedX < 0
-      extrapolatedX *= -1
-      extrapolatedSpeedX *= -1
+
+    # ball bouncing across the edges of the field
+    residualX = extrapolatedX % state.courtWidth
+    bounceCount = Math.floor extrapolatedX/state.courtWidth
+    extrapolatedX = residualX * Math.pow(-1, bounceCount)
+    if extrapolatedX < 0 then extrapolatedX += 1
+    extrapolatedSpeedX *= Math.pow(-1, bounceCount)
+
+    # check to see if someone wins
+    if state.winner?
+      winner = state.winner
+    else
+      if extrapolatedY < 0 then winner = 1
+      else if extrapolatedY > state.courtLength then winner = 0
+
     new PongState @timestamp,
                   extrapolatedX,
                   extrapolatedY,
                   extrapolatedSpeedX,
-                  extrapolatedSpeedY
+                  extrapolatedSpeedY,
+                  state.courtWidth,
+                  state.courtLength,
+                  winner
+
 
 # takes a state - extrapolates it, then modifies it by a player swing
 class Swing extends Action
@@ -45,13 +61,14 @@ class Swing extends Action
   actOn: (state)->
 
     MAX_REACH = 0.1
-    MAX_ANGLE = Math.PI/4
+    MAX_ANGLE = Math.PI/6
 
+    # bring the state up to the current time before applying the swing
     extrapolatedState = new Extrapolate(@timestamp).actOn state
 
     # assume player 0 and right swing - change if otherwise
     gap = extrapolatedState.ballLocY
-    if (@playerID is 1) then gap  = 1 - gap
+    if (@playerID is 1) then gap = extrapolatedState.courtLength - gap
 
     # ball out of reach - continue unmolested
     if gap < 0 or gap > MAX_REACH
@@ -60,8 +77,8 @@ class Swing extends Action
     # ball is reach calculate reflected angle
     else
       contactAngle = MAX_ANGLE * gap/MAX_REACH
-      if (@playerID is 1) then contactAngle  += Math.PI
-      if (@side is "left") then contactAngle  += Math.PI - (2 * contactAngle)
+      if (@playerID is 1) then contactAngle += Math.PI
+      if (@side is "left") then contactAngle += Math.PI - (2 * contactAngle)
 
       reflectedBallSpeedX = (extrapolatedState.ballSpeedX * 
                             Math.cos(2*contactAngle)) + 
@@ -74,13 +91,16 @@ class Swing extends Action
                             -Math.cos(2*contactAngle))
 
       if reflectedBallSpeedX is 0 and reflectedBallSpeedY is 0
-        reflectedBallSpeedY = 0.0005
+        reflectedBallSpeedY = 0.001
 
       return new PongState extrapolatedState.timestamp,
                            extrapolatedState.ballLocX,
                            extrapolatedState.ballLocY,
                            reflectedBallSpeedX,
-                           reflectedBallSpeedY
+                           reflectedBallSpeedY,
+                           extrapolatedState.courtWidth,
+                           extrapolatedState.courtLength,
+                           extrapolatedState.winner
  
 # representation of a game round - series of player swings
 class PongRound
@@ -133,7 +153,14 @@ class PongRound
 
 
 # test code
-pongRound = new PongRound new PongState(new Date().valueOf(), 0, 0, 0, 0)
+pongRound = new PongRound new PongState(new Date().valueOf(),
+                                        0, 
+                                        0,
+                                        0,
+                                        0,
+                                        1,
+                                        2,
+                                        null)
 
 window.onkeypress = (event)-> 
   if event.keyCode is 122
@@ -149,9 +176,7 @@ window.onload = ->
   court.style.position = "absolute"
   court.style.top = "0px"
   court.style.left = "0px"
-  court.style.width = COURT_SIZE + "px"
-  court.style.height = COURT_SIZE + "px"
-  court.style.backgroundColor = "green"
+  court.style.backgroundColor = "red"
 
   ball = document.getElementById "ball"
   ball.style.width = "10px"
@@ -160,12 +185,23 @@ window.onload = ->
   ball.style.position = "absolute"
 
   renderingInterval = setInterval ->
+
     startTime = new Date().valueOf()
     currentState = (pongRound.getStateAtTime new Date().valueOf())
-    ball.style.left = COURT_SIZE * currentState.ballLocX + "px"
-    ball.style.bottom = COURT_SIZE * currentState.ballLocY + "px"
+
+    displayMultiplier = 300
+
+    court.style.width = currentState.courtWidth * displayMultiplier + "px"
+    court.style.height = currentState.courtLength * displayMultiplier + "px"
+
+    ball.style.left = currentState.ballLocX * displayMultiplier + "px"
+    ball.style.bottom = currentState.ballLocY * displayMultiplier + "px"
+
+    if currentState.winner?
+      alert "Player " + currentState.winner + " has won!"
+      window.location.reload(false);
+
     endTime = new Date().valueOf()
-    console.log currentState.ballLocX + ", " + currentState.ballLocY
   , 10
 
 window.stop = ->

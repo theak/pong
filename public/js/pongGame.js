@@ -3,14 +3,19 @@ var Action, Extrapolate, PongRound, PongState, Swing, pongRound,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
+console.log("hi");
+
 PongState = (function() {
 
-  function PongState(timestamp, ballLocX, ballLocY, ballSpeedX, ballSpeedY) {
+  function PongState(timestamp, ballLocX, ballLocY, ballSpeedX, ballSpeedY, courtWidth, courtLength, winner) {
     this.timestamp = timestamp;
     this.ballLocX = ballLocX;
     this.ballLocY = ballLocY;
     this.ballSpeedX = ballSpeedX;
     this.ballSpeedY = ballSpeedY;
+    this.courtWidth = courtWidth;
+    this.courtLength = courtLength;
+    this.winner = winner;
   }
 
   return PongState;
@@ -38,20 +43,29 @@ Extrapolate = (function(_super) {
   }
 
   Extrapolate.prototype.actOn = function(state) {
-    var extrapolatedSpeedX, extrapolatedSpeedY, extrapolatedX, extrapolatedY, timeGap;
+    var bounceCount, extrapolatedSpeedX, extrapolatedSpeedY, extrapolatedX, extrapolatedY, residualX, timeGap, winner;
     timeGap = this.timestamp - state.timestamp;
     extrapolatedX = state.ballLocX + (timeGap * state.ballSpeedX);
     extrapolatedY = state.ballLocY + (timeGap * state.ballSpeedY);
     extrapolatedSpeedX = state.ballSpeedX;
     extrapolatedSpeedY = state.ballSpeedY;
-    if (extrapolatedX > 1) {
-      extrapolatedX = 2 - extrapolatedX;
-      extrapolatedSpeedX *= -1;
-    } else if (extrapolatedX < 0) {
-      extrapolatedX *= -1;
-      extrapolatedSpeedX *= -1;
+    residualX = extrapolatedX % state.courtWidth;
+    bounceCount = Math.floor(extrapolatedX / state.courtWidth);
+    extrapolatedX = residualX * Math.pow(-1, bounceCount);
+    if (extrapolatedX < 0) {
+      extrapolatedX += 1;
     }
-    return new PongState(this.timestamp, extrapolatedX, extrapolatedY, extrapolatedSpeedX, extrapolatedSpeedY);
+    extrapolatedSpeedX *= Math.pow(-1, bounceCount);
+    if (state.winner != null) {
+      winner = state.winner;
+    } else {
+      if (extrapolatedY < 0) {
+        winner = 1;
+      } else if (extrapolatedY > state.courtLength) {
+        winner = 0;
+      }
+    }
+    return new PongState(this.timestamp, extrapolatedX, extrapolatedY, extrapolatedSpeedX, extrapolatedSpeedY, state.courtWidth, state.courtLength, winner);
   };
 
   return Extrapolate;
@@ -72,11 +86,11 @@ Swing = (function(_super) {
   Swing.prototype.actOn = function(state) {
     var MAX_ANGLE, MAX_REACH, contactAngle, extrapolatedState, gap, reflectedBallSpeedX, reflectedBallSpeedY;
     MAX_REACH = 0.1;
-    MAX_ANGLE = Math.PI / 4;
+    MAX_ANGLE = Math.PI / 6;
     extrapolatedState = new Extrapolate(this.timestamp).actOn(state);
     gap = extrapolatedState.ballLocY;
     if (this.playerID === 1) {
-      gap = 1 - gap;
+      gap = extrapolatedState.courtLength - gap;
     }
     if (gap < 0 || gap > MAX_REACH) {
       return extrapolatedState;
@@ -91,9 +105,9 @@ Swing = (function(_super) {
       reflectedBallSpeedX = (extrapolatedState.ballSpeedX * Math.cos(2 * contactAngle)) + (extrapolatedState.ballSpeedY * Math.sin(2 * contactAngle));
       reflectedBallSpeedY = (extrapolatedState.ballSpeedX * Math.sin(2 * contactAngle)) + (extrapolatedState.ballSpeedY * -Math.cos(2 * contactAngle));
       if (reflectedBallSpeedX === 0 && reflectedBallSpeedY === 0) {
-        reflectedBallSpeedY = 0.0005;
+        reflectedBallSpeedY = 0.001;
       }
-      return new PongState(extrapolatedState.timestamp, extrapolatedState.ballLocX, extrapolatedState.ballLocY, reflectedBallSpeedX, reflectedBallSpeedY);
+      return new PongState(extrapolatedState.timestamp, extrapolatedState.ballLocX, extrapolatedState.ballLocY, reflectedBallSpeedX, reflectedBallSpeedY, extrapolatedState.courtWidth, extrapolatedState.courtLength, extrapolatedState.winner);
     }
   };
 
@@ -147,7 +161,7 @@ PongRound = (function() {
 
 })();
 
-pongRound = new PongRound(new PongState(new Date().valueOf(), 0, 0, 0, 0));
+pongRound = new PongRound(new PongState(new Date().valueOf(), 0, 0, 0, 0, 1, 2, null));
 
 window.onkeypress = function(event) {
   if (event.keyCode === 122) {
@@ -164,22 +178,26 @@ window.onload = function() {
   court.style.position = "absolute";
   court.style.top = "0px";
   court.style.left = "0px";
-  court.style.width = COURT_SIZE + "px";
-  court.style.height = COURT_SIZE + "px";
-  court.style.backgroundColor = "green";
+  court.style.backgroundColor = "red";
   ball = document.getElementById("ball");
   ball.style.width = "10px";
   ball.style.height = "10px";
   ball.style.backgroundColor = "blue";
   ball.style.position = "absolute";
   return renderingInterval = setInterval(function() {
-    var currentState, endTime, startTime;
+    var currentState, displayMultiplier, endTime, startTime;
     startTime = new Date().valueOf();
     currentState = pongRound.getStateAtTime(new Date().valueOf());
-    ball.style.left = COURT_SIZE * currentState.ballLocX + "px";
-    ball.style.bottom = COURT_SIZE * currentState.ballLocY + "px";
-    endTime = new Date().valueOf();
-    return console.log(currentState.ballLocX + ", " + currentState.ballLocY);
+    displayMultiplier = 300;
+    court.style.width = currentState.courtWidth * displayMultiplier + "px";
+    court.style.height = currentState.courtLength * displayMultiplier + "px";
+    ball.style.left = currentState.ballLocX * displayMultiplier + "px";
+    ball.style.bottom = currentState.ballLocY * displayMultiplier + "px";
+    if (currentState.winner != null) {
+      alert("Player " + currentState.winner + " has won!");
+      window.location.reload(false);
+    }
+    return endTime = new Date().valueOf();
   }, 10);
 };
 
