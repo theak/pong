@@ -1,7 +1,3 @@
-console.log "cheesecakes"
-socket = io.connect("/")
-socket.on "message", (data)-> console.log data # stub for now
-
 # initialize a round
 pongRound = new PongRound new PongState(new Date().valueOf(),
                                         0.5, 
