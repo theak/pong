@@ -7,8 +7,15 @@
   <script src="js/clientsocket.js"></script>
   <script src="js/gyro.js"></script>
   <script src="js/movement.js"></script>
+  <script>
+    //todo: Replace this with a callback
+    setTimeout(function() {
+      $("#info").html(swinger.playerId ? ("welcome, player " + swinger.playerId) : "too many players!");
+    }, 1000);
+  </script>
 </head>
 <body>
-
+  <h3 id="info">Joining...</h3>
+  <a href="javascript: swinger.swing()">Swing</a>
 </body>
 </html>

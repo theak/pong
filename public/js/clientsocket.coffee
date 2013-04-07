@@ -1,6 +1,4 @@
 socket = io.connect("/")
-swinger = null;
-receiver = null;
 
 getTokenFromUrl = ->
   if window.location.href.indexOf("#") == -1
@@ -8,29 +6,29 @@ getTokenFromUrl = ->
     return false
   else 
     return window.location.href.split("#")[1]
+token = getTokenFromUrl()
 
 class SwingMessage
   constructor: (@playerId, @timestamp, @token) ->
 
-token = getTokenFromUrl()
-
 if token
   socket.on "connect", ->
     socket.emit('token', token)
-  
+
   socket.on "message", (data)->
     if typeof data == "object" and data != null
-      receiver.send(data)
+      SwingReceiver.singleton.send(data)
     else
       console.log(data)
   
   socket.on "playerId", (id) ->
-    swinger.playerId = id
+    Swinger.singleton.playerId = id
 
 #for mobile, instantiate this class
 class Swinger
+  singleton: null
   constructor: (@token) ->
-    swinger = this
+    Swinger.singleton = this
     socket.emit "newplayer", @token
     console.log "new swinger!"
   swing: ->
@@ -39,8 +37,9 @@ class Swinger
 
 #for desktop, instantiate this class:
 class SwingReceiver
+  singleton: null
   constructor: (@callback) ->
-    receiver = this
+    SwingReceiver.singleton = this
   send: (swing) ->
     this.callback(swing)
 
