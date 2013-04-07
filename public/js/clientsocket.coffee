@@ -1,10 +1,13 @@
 socket = io.connect("/")
+getTokenFromUrl ->
+  if window.location.href.indexOf("#") == -1
+    alert "please specify a token"
+    return false
+  else 
+    return window.location.href.split("#")[1]
 
-if window.location.href.indexOf("#") == -1
-  alert "please specify a token"
-else 
-  window.token = window.location.href.split("#")[1]
-  
+token = getTokenFromUrl()
+if token
   socket.on "connect", ->
     socket.emit('token', token)
 
@@ -26,5 +29,5 @@ class SwingReceiver
 
 #these instantiations are here for example and test purposes
 receiver = new SwingReceiver (swing) ->
-  console.log(swing)
+  alert(swing)
 swinger = new Swinger 1, token
