@@ -17,9 +17,8 @@ httpServer = http.createServer (request, response) ->
 io = socketIO.listen httpServer
 io.sockets.on 'connection', (socket)->
   socket.emit 'message', 'awaiting token'
-  socket.on 'message', (msg)->
-    swing = JSON.parse(msg)
-    
+  socket.on 'message', (swing)->
+    socket.broadcast.to(swing.token).emit(swing)
 
 httpServer.listen DEFAULT_SERVER_PORT
 console.log 'Server running at port: ' + DEFAULT_SERVER_PORT

@@ -1,8 +1,13 @@
 socket = io.connect("/")
-
-# dummy socket thing to print it out
-socket.on "message", (data)->
-  console.log data
-
-# for demo purposes
-socket.emit "message", "a letter for the server"
+if window.location.href.indexOf("#") == -1
+  alert "please specify a token"
+else 
+  token = window.location.href.split("#")[1]
+  socket.on "message", (data)->
+    console.log data
+  
+class Swinger
+  constructor: (@playerId, @token)
+  
+  swing: ->
+    socket.emit "message", new Swing(playerId, new Date().getTime(), token)
