@@ -1,15 +1,24 @@
 socket = io.connect("/")
+receiver = null;
 
-if window.location.href.indexOf("#") == -1
-  alert "please specify a token"
-else 
-  window.token = window.location.href.split("#")[1]
-  
+getTokenFromUrl = ->
+  if window.location.href.indexOf("#") == -1
+    alert "please specify a token"
+    return false
+  else 
+    return window.location.href.split("#")[1]
+
+token = getTokenFromUrl()
+
+if token
   socket.on "connect", ->
     socket.emit('token', token)
 
   socket.on "message", (data)->
-    console.log data
+    if typeof data == "object"
+      receiver.send(data)
+    else
+      console.log(data)
 
 #for mobile, instantiate this class
 class Swinger
@@ -26,5 +35,5 @@ class SwingReceiver
 
 #these instantiations are here for example and test purposes
 receiver = new SwingReceiver (swing) ->
-  console.log(swing)
+  console.log("swing received! " + swing)
 swinger = new Swinger 1, token

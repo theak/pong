@@ -59,7 +59,7 @@ class Swing extends Action
   constructor: (timestamp, @playerID, @side, @speed)-> super timestamp
   actOn: (state)->
 
-    MAX_REACH = 0.1
+    MAX_REACH = 0.2
     MAX_ANGLE = Math.PI/6
 
     # bring the state up to the current time before applying the swing
@@ -104,47 +104,46 @@ class Swing extends Action
 # representation of a game round - series of player swings
 class PongRound
 
-  actions = [] # list of actions defining the round - ordered by timestamp
-  cachedStates = [] # list of state caches, the indices match the actions
-
   constructor: (@startState)->
+    @actions = [] # list of actions defining the round - ordered by timestamp
+    @cachedStates = [] # list of state caches, the indices match the actions
 
   addAction: (newAction)->
 
     # insert the action into the correct location
-    actions.push newAction
-    actions.sort (a,b)-> a.timestamp - b.timestamp
+    @actions.push newAction
+    @actions.sort (a,b)-> a.timestamp - b.timestamp
 
     # invalidate old cache states of necessary
-    newActionIndex = actions.indexOf newAction
-    cachedStates = cachedStates[...newActionIndex]
+    newActionIndex = @actions.indexOf newAction
+    @cachedStates = @cachedStates[...newActionIndex]
 
   getStateAtTime: (timestamp)->
 
     # find the index of most recent action before or at the requested timestamp
     # -1 indicates there were no actions before or at the requested timestamp
     mostRecentIndex = -1
-    for actionIndex in [(actions.length - 1)...-1]
-      if actions[actionIndex].timestamp <= timestamp
+    for actionIndex in [(@actions.length - 1)...-1]
+      if @actions[actionIndex].timestamp <= timestamp
         mostRecentIndex = actionIndex
         break
 
     # find the index of the most recent cache before or at the requested timestamp
     # -1 indicates no cache found
-    mostRecentCachedIndex = Math.min (cachedStates.length - 1), mostRecentIndex
+    mostRecentCachedIndex = Math.min (@cachedStates.length - 1), mostRecentIndex
 
     # bring the cache up to speed if necessary
     while mostRecentCachedIndex < mostRecentIndex
       mostRecentCachedState = 
-        if mostRecentCachedIndex >= 0 then cachedStates[mostRecentCachedIndex] 
+        if mostRecentCachedIndex >= 0 then @cachedStates[mostRecentCachedIndex] 
         else @startState
-      nextAction = actions[mostRecentCachedIndex + 1]
+      nextAction = @actions[mostRecentCachedIndex + 1]
       nextState = nextAction.actOn mostRecentCachedState
-      cachedStates[mostRecentCachedIndex + 1] = nextState
+      @cachedStates[mostRecentCachedIndex + 1] = nextState
       mostRecentCachedIndex += 1
 
     # do the final extrapolation to the requested timestamp
     mostRecentState = 
-      if mostRecentCachedIndex >= 0 then cachedStates[mostRecentIndex]
+      if mostRecentCachedIndex >= 0 then @cachedStates[mostRecentIndex]
       else @startState
     new Extrapolate(timestamp).actOn mostRecentState

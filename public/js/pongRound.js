@@ -83,7 +83,7 @@ Swing = (function(_super) {
 
   Swing.prototype.actOn = function(state) {
     var MAX_ANGLE, MAX_REACH, contactAngle, extrapolatedState, gap, reflectedBallSpeedX, reflectedBallSpeedY;
-    MAX_REACH = 0.1;
+    MAX_REACH = 0.2;
     MAX_ANGLE = Math.PI / 6;
     extrapolatedState = new Extrapolate(this.timestamp).actOn(state);
     gap = extrapolatedState.ballLocY;
@@ -114,44 +114,41 @@ Swing = (function(_super) {
 })(Action);
 
 PongRound = (function() {
-  var actions, cachedStates;
-
-  actions = [];
-
-  cachedStates = [];
 
   function PongRound(startState) {
     this.startState = startState;
+    this.actions = [];
+    this.cachedStates = [];
   }
 
   PongRound.prototype.addAction = function(newAction) {
     var newActionIndex;
-    actions.push(newAction);
-    actions.sort(function(a, b) {
+    this.actions.push(newAction);
+    this.actions.sort(function(a, b) {
       return a.timestamp - b.timestamp;
     });
-    newActionIndex = actions.indexOf(newAction);
-    return cachedStates = cachedStates.slice(0, newActionIndex);
+    newActionIndex = this.actions.indexOf(newAction);
+    return this.cachedStates = this.cachedStates.slice(0, newActionIndex);
   };
 
   PongRound.prototype.getStateAtTime = function(timestamp) {
     var actionIndex, mostRecentCachedIndex, mostRecentCachedState, mostRecentIndex, mostRecentState, nextAction, nextState, _i, _ref;
     mostRecentIndex = -1;
-    for (actionIndex = _i = _ref = actions.length - 1; _ref <= -1 ? _i < -1 : _i > -1; actionIndex = _ref <= -1 ? ++_i : --_i) {
-      if (actions[actionIndex].timestamp <= timestamp) {
+    for (actionIndex = _i = _ref = this.actions.length - 1; _ref <= -1 ? _i < -1 : _i > -1; actionIndex = _ref <= -1 ? ++_i : --_i) {
+      if (this.actions[actionIndex].timestamp <= timestamp) {
         mostRecentIndex = actionIndex;
         break;
       }
     }
-    mostRecentCachedIndex = Math.min(cachedStates.length - 1, mostRecentIndex);
+    mostRecentCachedIndex = Math.min(this.cachedStates.length - 1, mostRecentIndex);
     while (mostRecentCachedIndex < mostRecentIndex) {
-      mostRecentCachedState = mostRecentCachedIndex >= 0 ? cachedStates[mostRecentCachedIndex] : this.startState;
-      nextAction = actions[mostRecentCachedIndex + 1];
+      mostRecentCachedState = mostRecentCachedIndex >= 0 ? this.cachedStates[mostRecentCachedIndex] : this.startState;
+      nextAction = this.actions[mostRecentCachedIndex + 1];
       nextState = nextAction.actOn(mostRecentCachedState);
-      cachedStates[mostRecentCachedIndex + 1] = nextState;
+      this.cachedStates[mostRecentCachedIndex + 1] = nextState;
       mostRecentCachedIndex += 1;
     }
-    mostRecentState = mostRecentCachedIndex >= 0 ? cachedStates[mostRecentIndex] : this.startState;
+    mostRecentState = mostRecentCachedIndex >= 0 ? this.cachedStates[mostRecentIndex] : this.startState;
     return new Extrapolate(timestamp).actOn(mostRecentState);
   };
 
