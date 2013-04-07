@@ -123,7 +123,6 @@ onMovement = (callback) ->
   wrapper = (observer, processor, callback) ->
     delay = 50
     observer.track()
-    console.log processor.model.history.length
     if processor.hasMoved()
       callback()
       model.obliterate()
