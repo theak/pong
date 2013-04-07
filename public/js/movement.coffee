@@ -4,11 +4,12 @@ now = () ->
 
 
 class PositionProcessor
+  movementWindow = 1000
+  range = {"alpha" : 360, "beta" : 180, "gamma" : 180}
+
   #class responsible for analyzing our position model
   #and detecting movement
   constructor: (@model) ->
-    @movementWindow = 1000
-    @range = {"alpha" : 360, "beta" : 180, "gamma" : 180}
 
   extremes: (history, attribute) ->
     #returns the longest distance between any two positions in 
@@ -21,7 +22,7 @@ class PositionProcessor
     second = history[0]
     for i in history
       for j in history
-        dist = @distance(i[attribute], j[attribute], @range[attribute])
+        dist = @distance(i[attribute], j[attribute], range[attribute])
         if dist > maxDistance
           maxDistance = dist
           first = i
@@ -30,7 +31,7 @@ class PositionProcessor
     max = Math.max first[attribute], second[attribute]
     return {"min" : min, "max" : max, "distance" : maxDistance}
 
-  distance: (n, k, range) ->
+  distance: (n, k, r) ->
     #returns d s.t. 0 <= d < r/2 and |n - k| - d % r = 0
     #
     #in words, imagine points on a circle of circumference
@@ -54,12 +55,12 @@ class PositionProcessor
     #       to see that d > 0, note that |n - k| >= 0 and that
     #       r - d, where d < r/2, is always greater than 0
 
-    n = n % range
-    k = k % range
-    return Math.min Math.abs((n-k)), range - Math.abs((n-k))
+    n = n % r
+    k = k % r
+    return Math.min Math.abs((n-k)), r - Math.abs((n-k))
 
   hasMoved: (lambda) ->
-    positions = @model.read(@movementWindow)
+    positions = @model.read(movementWindow)
     if positions.length <= 0
       return false
 
@@ -67,9 +68,9 @@ class PositionProcessor
     beta = @extremes(positions, "beta")
     gamma = @extremes(positions, "gamma")
 
-    return alpha.distance > (7.0/8.0)*(@range["alpha"]/2.0) or
-           beta.distance > (7.0/8.0)*(@range["beta"]/2.0) or 
-           gamma.distance > (7.0/8.0)*(@range["gamma"]/2.0)
+    return alpha.distance > (7.0/8.0)*(range["alpha"]/2.0) or
+           beta.distance > (7.0/8.0)*(range["beta"]/2.0) or 
+           gamma.distance > (7.0/8.0)*(range["gamma"]/2.0)
 
 
 
@@ -88,22 +89,21 @@ class PositionObserver
 
 class PositionModel  
   #model of where the phone has been.
-  constructor: () ->
-  	@history = []
-  	@maxHistory = 2500
+  history = []
+  maxHistory = 2500
 
   obliterate: () ->
-  	@history = []
+  	history = []
 
   write: (positionStruct) ->
-    @history.push positionStruct
+    history.push positionStruct
 
     #make sure history isn't too long
-    @history = @read @maxHistory
+    history = @read maxHistory
 
  	read: (age) ->
     time = now()
-    return (position for position in @history \
+    return (position for position in history \
             when time - position.age < age)
 
 
@@ -134,7 +134,7 @@ onMovement = (callback) ->
 
 #test code. 
 onMovement(() ->
-  $("body").append "moved <br />"
+  $("body").append "moved! <br />"
   if window.navigator.vibrate
     window.navigator.vibrate 500
 )

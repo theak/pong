@@ -172,11 +172,9 @@ onMovement = function(callback) {
   return wrapper(observer, processor, callback);
 };
 
-/*
-onMovement(() ->
-  $("body").append "moved <br />"
-  if window.navigator.vibrate
-    window.navigator.vibrate 500
-)
-*/
-
+onMovement(function() {
+  $("body").append("moved! <br />");
+  if (window.navigator.vibrate) {
+    return window.navigator.vibrate(500);
+  }
+});
