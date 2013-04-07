@@ -1,2 +1,2 @@
-class Swing
+class SwingMessage
 	constructor: (@playerId, @timestamp, @token) ->

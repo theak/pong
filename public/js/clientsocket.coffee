@@ -1,13 +1,30 @@
 socket = io.connect("/")
+
 if window.location.href.indexOf("#") == -1
   alert "please specify a token"
 else 
-  token = window.location.href.split("#")[1]
+  window.token = window.location.href.split("#")[1]
+  
+  socket.on "connect", ->
+    socket.emit('token', token)
+
   socket.on "message", (data)->
     console.log data
-  
+
+#for mobile, instantiate this class
 class Swinger
-  constructor: (@playerId, @token)
-  
+  constructor: (@playerId, @token) ->
   swing: ->
-    socket.emit "message", new Swing(playerId, new Date().getTime(), token)
+    socket.emit "swing", new SwingMessage(this.playerId, new Date().getTime(), this.token)
+
+#for desktop, instantiate this class:
+class SwingReceiver
+  constructor: (@callback) ->
+    receiver = this
+  send: (swing) ->
+    this.callback(swing)
+
+#these instantiations are here for example and test purposes
+receiver = new SwingReceiver (swing) ->
+  console.log(swing)
+swinger = new Swinger 1, token

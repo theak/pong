@@ -16,9 +16,11 @@ httpServer = http.createServer (request, response) ->
 # set up the dynamic server messaing
 io = socketIO.listen httpServer
 io.sockets.on 'connection', (socket)->
-  socket.emit 'message', 'awaiting token'
-  socket.on 'message', (swing)->
+  socket.on 'swing', (swing)->
     socket.broadcast.to(swing.token).emit(swing)
+    console.log(swing)
+  socket.on 'token', (token)->
+    socket.join(token)
 
 httpServer.listen DEFAULT_SERVER_PORT
 console.log 'Server running at port: ' + DEFAULT_SERVER_PORT
