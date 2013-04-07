@@ -148,15 +148,3 @@ class PongRound
       if mostRecentCachedIndex >= 0 then cachedStates[mostRecentIndex]
       else @startState
     new Extrapolate(timestamp).actOn mostRecentState
-
-
-
-# test code
-pongRound = new PongRound new PongState(new Date().valueOf(),
-                                        0, 
-                                        0,
-                                        0,
-                                        0,
-                                        1,
-                                        2,
-                                        null)
