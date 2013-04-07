@@ -30,14 +30,15 @@ if (token) {
     return socket.emit('token', token);
   });
   socket.on("message", function(data) {
-    if (typeof data === "object" && data !== null) {
+    if (data !== null && typeof data === "object" && (SwingReceiver.singleton != null)) {
       return SwingReceiver.singleton.send(data);
     } else {
       return console.log(data);
     }
   });
-  socket.on("playerId", function(id) {
-    return Swinger.singleton.playerId = id;
+  socket.on("playerId", function(id, delta) {
+    Swinger.singleton.playerId = id;
+    return Swinger.singleton.delta = delta;
   });
 }
 
@@ -47,13 +48,13 @@ Swinger = (function() {
   function Swinger(token) {
     this.token = token;
     Swinger.singleton = this;
-    socket.emit("newplayer", this.token);
+    socket.emit("newplayer", this.token, new Date().getTime());
     console.log("new swinger!");
   }
 
   Swinger.prototype.swing = function() {
-    if (this.playerId != null) {
-      return socket.emit("swing", new SwingMessage(this.playerId, new Date().getTime(), this.token));
+    if ((this.playerId != null) && (this.delta != null)) {
+      return socket.emit("swing", new SwingMessage(this.playerId, new Date().getTime() + this.delta, this.token));
     }
   };
 

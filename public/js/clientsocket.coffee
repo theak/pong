@@ -16,24 +16,25 @@ if token
     socket.emit('token', token)
 
   socket.on "message", (data)->
-    if typeof data == "object" and data != null
+    if data != null and typeof data == "object" and SwingReceiver.singleton?
       SwingReceiver.singleton.send(data)
     else
       console.log(data)
   
-  socket.on "playerId", (id) ->
+  socket.on "playerId", (id, delta) ->
     Swinger.singleton.playerId = id
+    Swinger.singleton.delta = delta
 
 #for mobile, instantiate this class
 class Swinger
   singleton: null
   constructor: (@token) ->
     Swinger.singleton = this
-    socket.emit "newplayer", @token
+    socket.emit "newplayer", @token, new Date().getTime()
     console.log "new swinger!"
   swing: ->
-    if @playerId?
-      socket.emit "swing", new SwingMessage(@playerId, new Date().getTime(), this.token)
+    if @playerId? and @delta?
+      socket.emit "swing", new SwingMessage(@playerId, new Date().getTime() + @delta, this.token)
 
 #for desktop, instantiate this class:
 class SwingReceiver

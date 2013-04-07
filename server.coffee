@@ -20,7 +20,7 @@ httpServer = http.createServer (request, response) ->
 io = socketIO.listen httpServer
 io.sockets.on 'connection', (socket)->
   
-  socket.on 'newplayer', (token) ->
+  socket.on 'newplayer', (token, timestamp) ->
     console.log("new player")
     tokenToPlayerSockets[token] ?= []
     if tokenToPlayerSockets[token].length >= 2
@@ -28,8 +28,10 @@ io.sockets.on 'connection', (socket)->
     else
       tokenToPlayerSockets[token].push(socket.id)
       socketToToken[socket.id] = token
-      socket.emit('playerId', tokenToPlayerSockets[token].length - 1)
-      socket.emit('message', "welcome, player " + tokenToPlayerSockets[token].length - 1)
+      console.log(timestamp)
+      delta = (new Date().getTime()) - timestamp
+      socket.emit('playerId', tokenToPlayerSockets[token].length - 1, delta)
+      socket.emit('message', "welcome, player " + (tokenToPlayerSockets[token].length - 1) + ", delta: " + delta)
 
   socket.on 'disconnect', ->
       token = socketToToken[socket.id]
