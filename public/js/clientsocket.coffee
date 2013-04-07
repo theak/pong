@@ -1,5 +1,5 @@
 socket = io.connect("/")
-getTokenFromUrl ->
+getTokenFromUrl = ->
   if window.location.href.indexOf("#") == -1
     alert "please specify a token"
     return false
@@ -7,6 +7,7 @@ getTokenFromUrl ->
     return window.location.href.split("#")[1]
 
 token = getTokenFromUrl()
+
 if token
   socket.on "connect", ->
     socket.emit('token', token)
