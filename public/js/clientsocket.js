@@ -3,6 +3,8 @@ var SwingReceiver, Swinger, getTokenFromUrl, receiver, socket, swinger, token;
 
 socket = io.connect("/");
 
+receiver = null;
+
 getTokenFromUrl = function() {
   if (window.location.href.indexOf("#") === -1) {
     alert("please specify a token");
@@ -19,7 +21,11 @@ if (token) {
     return socket.emit('token', token);
   });
   socket.on("message", function(data) {
-    return console.log(data);
+    if (typeof data === "object") {
+      return receiver.send(data);
+    } else {
+      return console.log(data);
+    }
   });
 }
 
@@ -39,8 +45,6 @@ Swinger = (function() {
 
 SwingReceiver = (function() {
   function SwingReceiver(callback) {
-    var receiver;
-
     this.callback = callback;
     receiver = this;
   }
@@ -54,7 +58,7 @@ SwingReceiver = (function() {
 })();
 
 receiver = new SwingReceiver(function(swing) {
-  return alert(swing);
+  return console.log("swing received! " + swing);
 });
 
 swinger = new Swinger(1, token);

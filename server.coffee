@@ -17,9 +17,10 @@ httpServer = http.createServer (request, response) ->
 io = socketIO.listen httpServer
 io.sockets.on 'connection', (socket)->
   socket.on 'swing', (swing)->
-    socket.broadcast.to(swing.token).emit(swing)
+    io.sockets.in(swing.token).emit('message', swing)
     console.log(swing)
   socket.on 'token', (token)->
+    socket.emit('message', 'joining: ' + token)
     socket.join(token)
 
 httpServer.listen DEFAULT_SERVER_PORT
