@@ -131,11 +131,16 @@ onMovement = (callback) ->
   wrapper observer, processor, callback 
 
 
+swinger = new Swinger(getTokenFromUrl())
+onMovement -> 
+  swinger.swing()
+  document.body.style.backgroundColor = 'blue'
 
-#test code. 
-onMovement(() ->
-  $("body").append "moved! <br />"
-  if window.navigator.vibrate
-    window.navigator.vibrate 500
-)
+
+# #test code. 
+# onMovement(() ->
+#   $("body").append "moved! <br />"
+#   if window.navigator.vibrate
+#     window.navigator.vibrate 500
+# )
 

@@ -1,4 +1,4 @@
 swinger = new Swinger(getTokenFromUrl())
-callback = () ->
+onMovement -> 
   swinger.swing()
-onMovement(callback)
+  document.body.style.backgroundColor = 'blue'
