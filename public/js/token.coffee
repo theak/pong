@@ -1,4 +1,4 @@
-next = () ->
+makeToken = () ->
   alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
   output = ""
   for i in [0..6]

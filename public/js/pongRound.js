@@ -83,7 +83,7 @@ Swing = (function(_super) {
 
   Swing.prototype.actOn = function(state) {
     var MAX_ANGLE, MAX_REACH, contactAngle, extrapolatedState, gap, reflectedBallSpeedX, reflectedBallSpeedY;
-    MAX_REACH = 0.2;
+    MAX_REACH = 0.4;
     MAX_ANGLE = Math.PI / 6;
     extrapolatedState = new Extrapolate(this.timestamp).actOn(state);
     gap = extrapolatedState.ballLocY;

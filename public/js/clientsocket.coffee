@@ -1,50 +1,60 @@
-socket = io.connect("/")
+# Handles all server communications
+# abstracts away from socket.io to expose simple interface
+clientSocket = do ->
 
-getTokenFromUrl = ->
-  if window.location.href.indexOf("#") == -1
-    alert "please specify a token"
-    return false
-  else 
-    return window.location.href.split("#")[1]
-token = getTokenFromUrl()
+  # -----------------------------------------------------------------------------------------------
+  # local connection state
+  # -----------------------------------------------------------------------------------------------
+  socket = io.connect("/")
+  timeDelta = null # time difference between client and server
+  playerId = null
 
-class SwingMessage
-  constructor: (@playerId, @timestamp, @token) ->
+  # generate the a token if necessary
+  token = window.location.hash.slice(1)
+  if token.length is 0
+    token = makeToken()
+    window.location.hash = token
 
-if token
+  class SwingMessage
+    constructor: (@playerId, @timestamp, @token) ->
+
+  # -----------------------------------------------------------------------------------------------
+  # socket event handlers
+  # -----------------------------------------------------------------------------------------------
+  # on connection to server inform them what room to be joined
   socket.on "connect", ->
-    socket.emit('token', token)
+    socket.emit "getServerTime", new Date().getTime()
+    socket.emit 'joinRoom', token
 
-  socket.on "message", (data)->
-    if data != null and typeof data == "object" and SwingReceiver.singleton?
-      SwingReceiver.singleton.send(data)
-    else
-      console.log(data)
-  
-  socket.on "playerId", (id, delta) ->
-    Swinger.singleton.playerId = id
-    Swinger.singleton.delta = delta
+  # received a swing event from the server - propagate to all receivers
+  socket.on "swing", (swingMessage)->
+    swingMessage.timestamp -= timeDelta
+    if clientSocket.onswing? then clientSocket.onswing swingMessage
 
-#for mobile, instantiate this class
-class Swinger
-  singleton: null
-  constructor: (@token) ->
-    Swinger.singleton = this
-    socket.emit "newplayer", @token, new Date().getTime()
-    console.log "new swinger!"
-  swing: ->
-    if @playerId? and @delta?
-      socket.emit "swing", new SwingMessage(@playerId, new Date().getTime() + @delta, this.token)
+  # generic message from server - just log it
+  socket.on "message", (data)-> console.log(data)
 
-#for desktop, instantiate this class:
-class SwingReceiver
-  singleton: null
-  constructor: (@callback) ->
-    SwingReceiver.singleton = this
-  send: (swing) ->
-    this.callback(swing)
+  # sever informing you what player you are
+  socket.on "playerId", (id)-> playerId = id
 
-#these instantiations are here for example and test purposes
-#receiver = new SwingReceiver (swing) ->
-#  console.log("swing received! " + swing)
-#swinger = new Swinger token
+  # notice from server about the time delta between client and server
+  # the delta is sever - client
+  # i.e to get to server time just add the delta to local client time
+  socket.on "serverTime", (serverTime, originalRequestTime)=> 
+    currentTime = new Date().getTime()
+    oneWayLatency = (originalRequestTime - currentTime)/2
+    timeDelta = serverTime - originalRequestTime - oneWayLatency
+
+  # -----------------------------------------------------------------------------------------------
+  # public API
+  # -----------------------------------------------------------------------------------------------
+  join: ->
+    socket.emit "newPlayer", token
+
+  swing:->
+    if playerId? and timeDelta?
+      socket.emit "swing", new SwingMessage(playerId, new Date().getTime() + timeDelta)
+
+  onswing: ->
+
+  getToken: -> token

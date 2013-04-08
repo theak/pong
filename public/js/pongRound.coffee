@@ -59,7 +59,7 @@ class Swing extends Action
   constructor: (timestamp, @playerID, @side, @speed)-> super timestamp
   actOn: (state)->
 
-    MAX_REACH = 0.2
+    MAX_REACH = 0.4
     MAX_ANGLE = Math.PI/6
 
     # bring the state up to the current time before applying the swing

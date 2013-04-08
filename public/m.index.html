@@ -4,18 +4,19 @@
   <title>Pong</title>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="js/clientsocket.js"></script>
+  <script src="js/clientSocket.js"></script>
   <script src="js/gyro.js"></script>
   <script src="js/movement.js"></script>
+  <script src="js/m.client.js"></script>
   <script defer>
     //todo: Replace this with a callback
-    setTimeout(function() {
-      $("#info").html(typeof swinger.playerId == "number" ? ("welcome, player " + swinger.playerId) : "too many players!");
-    }, 500);
+    // setTimeout(function() {
+    //   $("#info").html(typeof swinger.playerId == "number" ? ("welcome, player " + swinger.playerId) : "too many players!");
+    // }, 500);
   </script>
 </head>
 <body>
   <h3 id="info">Joining...</h3>
-  <a href="javascript: swinger.swing()">Swing</a>
+  <a href="javascript: clientSocket.swing()">Swing</a>
 </body>
 </html>
