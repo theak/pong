@@ -79,7 +79,7 @@ class PositionProcessor
 
     signCount = {"zero":0, "pos":0, "neg":0}
 
-    #only examine last five positions
+    #of the last 6 position pairs, only examine the first four.
     positionsToExamine = positions.reverse()
     positionsToExamine = positionsToExamine[0..6]
 
