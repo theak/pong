@@ -1,11 +1,10 @@
 now = () ->
   #returns time in milliseconds
   return new Date().getTime()
-
+ranges = {"alpha" : 360, "beta" : 180, "gamma" : 180}
 
 class PositionProcessor
   movementWindow = 1000
-  range = {"alpha" : 360, "beta" : 180, "gamma" : 180}
 
   #class responsible for analyzing our position model
   #and detecting movement
@@ -22,7 +21,7 @@ class PositionProcessor
     second = history[0]
     for i in history
       for j in history
-        dist = @distance(i[attribute], j[attribute], range[attribute])
+        dist = @distance(i[attribute], j[attribute], ranges[attribute])
         if dist > maxDistance
           maxDistance = dist
           first = i
@@ -59,18 +58,53 @@ class PositionProcessor
     k = k % r
     return Math.min Math.abs((n-k)), r - Math.abs((n-k))
 
-  hasMoved: (lambda) ->
+  sign: (first, second, range) ->
+    d = @distance(first, second, range)
+    #case 1: fastest route between first and second in circle space
+    #        is first - d 
+    if first - d == second or range + first - d == second
+      return "pos"
+
+    #case 2: fastest route between first and second in circle space
+    #        is first + d 
+    if first + d == second or first + d == second + range
+      return "neg"
+
+    return "zero"
+
+  cardinality: () ->
     positions = @model.read(movementWindow)
-    if positions.length <= 0
+    if positions.length <= 3
+      return "rightToLeft"
+
+    signCount = {"zero":0, "pos":0, "neg":0}
+
+    #only examine last five positions
+    positionsToExamine = positions.reverse()
+    positionsToExamine = positionsToExamine[0..6]
+
+    for position, i in positionsToExamine[0..positionsToExamine.length - 3]
+      first = positions[i].alpha
+      second = positions[i+1].alpha
+      signCount[@sign(first, second, ranges["alpha"])] += 1
+      #$("body").append(positions[i].alpha + " <br />")
+
+    if signCount["pos"] > signCount["neg"]
+      return "leftToRight"
+    return "rightToLeft"
+
+  hasMoved: () ->
+    positions = @model.read(movementWindow)
+    if positions.length <= 3
       return false
 
     alpha = @extremes(positions, "alpha")
     beta = @extremes(positions, "beta")
     gamma = @extremes(positions, "gamma")
 
-    return alpha.distance > (7.0/8.0)*(range["alpha"]/2.0) or
-           beta.distance > (7.0/8.0)*(range["beta"]/2.0) or 
-           gamma.distance > (7.0/8.0)*(range["gamma"]/2.0)
+    return alpha.distance > (6.0/8.0)*(ranges["alpha"]/2.0) or
+           beta.distance > (6.0/8.0)*(ranges["beta"]/2.0) or 
+           gamma.distance > (6.0/8.0)*(ranges["gamma"]/2.0)
 
 
 
@@ -79,9 +113,13 @@ class PositionObserver
   constructor: (@model) ->
 
   getPosition: () -> 
-    location = gyro.getOrientation()
-    return new PositionStruct now(), location.alpha, \
-				                      location.beta, location.gamma
+    #for ease of calculations, shift all alpha, beta, gamma
+    #ranges to be > 0
+    position = gyro.getOrientation()
+    return new PositionStruct now(), \
+                              Math.round position.alpha, \
+				                      Math.round(position.beta + ranges["beta"]/2), \
+                              Math.round(position.gamma + ranges["gamma"]/2)
   track: () ->
     @model.write @getPosition()
 
@@ -124,7 +162,7 @@ onMovement = (callback) ->
     delay = 50
     observer.track()
     if processor.hasMoved()
-      callback()
+      callback(processor.cardinality())
       model.obliterate()
       delay = 1000
     setTimeout (-> wrapper observer, processor, callback), delay
@@ -132,15 +170,18 @@ onMovement = (callback) ->
 
 
 swinger = new Swinger(getTokenFromUrl())
-onMovement -> 
+onMovement (direction) -> 
   swinger.swing()
   document.body.style.backgroundColor = 'blue'
 
 
+###
 # #test code. 
-# onMovement(() ->
-#   $("body").append "moved! <br />"
-#   if window.navigator.vibrate
-#     window.navigator.vibrate 500
-# )
+onMovement((direction) ->
+  $("body").append("moved" + direction + " <br />")
+  if window.navigator.vibrate
+    window.navigator.vibrate 500
+ )
+###
+ 
 
