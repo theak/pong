@@ -7,7 +7,6 @@ window.onload = function() {
   qrCode = document.body.e("img mobileCode", function() {
     return this.src = "http://chart.googleapis.com/chart?cht=qr&chs=128x128&choe=UTF-8&chld=H|0&chl=http://http://10.1.10.20:8000/m.index.html#" + clientSocket.getToken();
   });
-  console.log(qrCode.src);
   player0Score = document.body.e("span player0Score", function() {
     this.t("0");
     this.style.position = "absolute";
@@ -38,20 +37,15 @@ window.onload = function() {
     switch (event.keyCode) {
       case 90:
         swing = new Swing(new Date().valueOf(), 0, "right", null);
-        console.log("player 0 swing");
         return pongRound.addAction(swing);
       case 88:
         swing = new Swing(new Date().valueOf(), 1, "right", null);
-        console.log("player 1 swing");
         return pongRound.addAction(swing);
     }
   };
   clientSocket.onswing = function(swingMessage) {
     var newSwing;
-    console.log("on swing triggered");
-    console.log(swingMessage);
     newSwing = new Swing(swingMessage.timestamp, swingMessage.playerId, swingMessage.side, swingMessage.speed);
-    console.log(newSwing);
     return pongRound.addAction(newSwing);
   };
   return renderingInterval = setInterval(function() {
@@ -61,13 +55,6 @@ window.onload = function() {
     court.style.height = currentState.courtWidth * displayMultiplier + "px";
     court.style.width = currentState.courtLength * displayMultiplier + "px";
     court.ball.style.top = currentState.ballLocX * displayMultiplier + "px";
-    court.ball.style.left = currentState.ballLocY * displayMultiplier + "px";
-    if (currentState.winner != null) {
-      playerScores[currentState.winner] += 1;
-      player0Score.innerHTML = playerScores[0];
-      player1Score.innerHTML = playerScores[1];
-      pongRound = new PongRound(new PongState(new Date().valueOf(), 0.5, 0, 0, 0, 1, 2, null));
-      return console.log(pongRound.getStateAtTime(new Date().valueOf()));
-    }
+    return court.ball.style.left = currentState.ballLocY * displayMultiplier + "px";
   }, 10);
 };

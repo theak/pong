@@ -31,9 +31,9 @@ io.sockets.on 'connection', (socket)->
   # it also includes the timestamp of the original client request
   # this is included in the reply to allow the client to calculate the time delta
   # and compensate for round trip latency
-  socket.on "getServerTime", (clientTime)->
-    console.log "socketEvent: getServerTime, clientTime: " + clientTime
-    socket.emit "serverTime", new Date().getTime(), clientTime
+  socket.on "getServerTime", (callback)->
+    console.log "socketEvent: serverTime"
+    callback new Date().getTime()
 
   # when a desktop joins
   # it tells the server what room it wants to listen to updates from
@@ -43,10 +43,8 @@ io.sockets.on 'connection', (socket)->
     socket.emit('message', 'joining: ' + token)
 
   # when a mobile phone joins, it tells the server its desired game token
-  # and its current timestamp
   # the server replies assigning it a player ID for that game
-  # and a delta for its timestamp
-  socket.on 'newPlayer', (token, timestamp) ->
+  socket.on 'newPlayer', (token, callback) ->
     console.log "socketEvent: newPlayer, token: " + token
 
     tokenToPlayerSockets[token] ?= [null, null]
@@ -58,7 +56,7 @@ io.sockets.on 'connection', (socket)->
         playerId = index
         tokenToPlayerSockets[token][playerId] = socket.id
         socketToToken[socket.id] = token
-        socket.emit 'playerId', playerId
+        callback playerId
         socket.emit 'message', "welcome, player " + playerId
         foundSpace = true
         break 

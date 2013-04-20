@@ -23,37 +23,43 @@ clientSocket = do ->
   # -----------------------------------------------------------------------------------------------
   # on connection to server inform them what room to be joined
   socket.on "connect", ->
-    socket.emit "getServerTime", new Date().getTime()
+    log "socket|on|connect"
     socket.emit 'joinRoom', token
+    log "socket|emit|joinRoom|" + token
+    requestTime = new Date().getTime()
+    socket.emit "getServerTime", (serverTime)->
+      log "socket|callback|getServerTime|" + serverTime
+      replyTime = new Date().getTime()
+      timeDelta = serverTime - (requestTime/2) - (replyTime/2)
+    log "socket|emit|getServerTime"
 
   # received a swing event from the server - propagate to all receivers
   socket.on "swing", (swingMessage)->
+    log "socket|on|swing|" + JSON.stringify swingMessage
     swingMessage.timestamp -= timeDelta
+    console.log timeDelta
+    console.log "received delay " + (new Date().getTime() - swingMessage.timestamp)
     if clientSocket.onswing? then clientSocket.onswing swingMessage
 
   # generic message from server - just log it
-  socket.on "message", (data)-> console.log(data)
-
-  # sever informing you what player you are
-  socket.on "playerId", (id)-> playerId = id
-
-  # notice from server about the time delta between client and server
-  # the delta is sever - client
-  # i.e to get to server time just add the delta to local client time
-  socket.on "serverTime", (serverTime, originalRequestTime)=> 
-    currentTime = new Date().getTime()
-    oneWayLatency = (originalRequestTime - currentTime)/2
-    timeDelta = serverTime - originalRequestTime - oneWayLatency
+  socket.on "message", (data)-> 
+    log "socket|on|message|" + data.toString()
 
   # -----------------------------------------------------------------------------------------------
   # public API
   # -----------------------------------------------------------------------------------------------
   join: ->
-    socket.emit "newPlayer", token
+    socket.emit "newPlayer", token, (id)->
+      log "socket|callback|newPlayer|" + id
+      playerId = id
+    log "socket|emit|newPlayer|" + token
 
   swing:->
     if playerId? and timeDelta?
-      socket.emit "swing", new SwingMessage(playerId, new Date().getTime() + timeDelta)
+      swingMessage = new SwingMessage(playerId, new Date().getTime())
+      swingMessage.timestamp += timeDelta
+      socket.emit "swing", swingMessage
+      log "socket|emit|swing|" + JSON.stringify swingMessage
 
   onswing: ->
 

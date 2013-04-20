@@ -29,16 +29,16 @@ httpServer = http.createServer(function(request, response) {
 io = socketIO.listen(httpServer);
 
 io.sockets.on('connection', function(socket) {
-  socket.on("getServerTime", function(clientTime) {
-    console.log("socketEvent: getServerTime, clientTime: " + clientTime);
-    return socket.emit("serverTime", new Date().getTime(), clientTime);
+  socket.on("serverTime", function(clientTime, callback) {
+    console.log("socketEvent: serverTime");
+    return callback(new Date().getTime());
   });
   socket.on('joinRoom', function(token) {
     console.log("socketEvent: joinRoom, token: " + token);
     socket.join(token);
     return socket.emit('message', 'joining: ' + token);
   });
-  socket.on('newPlayer', function(token, timestamp) {
+  socket.on('newPlayer', function(token, callback) {
     var existingSocketId, foundSpace, index, playerId, _i, _len, _ref, _ref1;
     console.log("socketEvent: newPlayer, token: " + token);
     if ((_ref = tokenToPlayerSockets[token]) == null) {
@@ -52,7 +52,7 @@ io.sockets.on('connection', function(socket) {
         playerId = index;
         tokenToPlayerSockets[token][playerId] = socket.id;
         socketToToken[socket.id] = token;
-        socket.emit('playerId', playerId);
+        callback(playerId);
         socket.emit('message', "welcome, player " + playerId);
         foundSpace = true;
         break;

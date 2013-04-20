@@ -169,10 +169,10 @@ onMovement = (callback) ->
   wrapper observer, processor, callback 
 
 
-swinger = new Swinger(getTokenFromUrl())
-onMovement (direction) -> 
-  swinger.swing()
-  document.body.style.backgroundColor = 'blue'
+# swinger = new Swinger(getTokenFromUrl())
+# onMovement (direction) -> 
+#   swinger.swing()
+#   document.body.style.backgroundColor = 'blue'
 
 
 ###

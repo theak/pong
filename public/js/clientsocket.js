@@ -2,8 +2,7 @@
 var clientSocket;
 
 clientSocket = (function() {
-  var SwingMessage, playerId, socket, timeDelta, token,
-    _this = this;
+  var SwingMessage, playerId, socket, timeDelta, token;
   socket = io.connect("/");
   timeDelta = null;
   playerId = null;
@@ -24,34 +23,46 @@ clientSocket = (function() {
 
   })();
   socket.on("connect", function() {
-    socket.emit("getServerTime", new Date().getTime());
-    return socket.emit('joinRoom', token);
+    var requestTime;
+    log("socket|on|connect");
+    socket.emit('joinRoom', token);
+    log("socket|emit|joinRoom|" + token);
+    requestTime = new Date().getTime();
+    socket.emit("getServerTime", function(serverTime) {
+      var replyTime;
+      log("socket|callback|getServerTime|" + serverTime);
+      replyTime = new Date().getTime();
+      return timeDelta = serverTime - (requestTime / 2) - (replyTime / 2);
+    });
+    return log("socket|emit|getServerTime");
   });
   socket.on("swing", function(swingMessage) {
+    log("socket|on|swing|" + JSON.stringify(swingMessage));
     swingMessage.timestamp -= timeDelta;
+    console.log(timeDelta);
+    console.log("received delay " + (new Date().getTime() - swingMessage.timestamp));
     if (clientSocket.onswing != null) {
       return clientSocket.onswing(swingMessage);
     }
   });
   socket.on("message", function(data) {
-    return console.log(data);
-  });
-  socket.on("playerId", function(id) {
-    return playerId = id;
-  });
-  socket.on("serverTime", function(serverTime, originalRequestTime) {
-    var currentTime, oneWayLatency;
-    currentTime = new Date().getTime();
-    oneWayLatency = (originalRequestTime - currentTime) / 2;
-    return timeDelta = serverTime - originalRequestTime - oneWayLatency;
+    return log("socket|on|message|" + data.toString());
   });
   return {
     join: function() {
-      return socket.emit("newPlayer", token);
+      socket.emit("newPlayer", token, function(id) {
+        log("socket|callback|newPlayer|" + id);
+        return playerId = id;
+      });
+      return log("socket|emit|newPlayer|" + token);
     },
     swing: function() {
+      var swingMessage;
       if ((playerId != null) && (timeDelta != null)) {
-        return socket.emit("swing", new SwingMessage(playerId, new Date().getTime() + timeDelta));
+        swingMessage = new SwingMessage(playerId, new Date().getTime());
+        swingMessage.timestamp += timeDelta;
+        socket.emit("swing", swingMessage);
+        return log("socket|emit|swing|" + JSON.stringify(swingMessage));
       }
     },
     onswing: function() {},
